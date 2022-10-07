@@ -1,0 +1,159 @@
+---
+title: "Naive Bayes Fake News"
+Author: Shulaika van Kollenburg
+Reviewer: Anne Dam
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output:
+   html_notebook:
+    toc: true
+    toc_depth: 2
+---
+
+
+
+## Business Understanding
+The Dataset of FakeNews consists of 20800 news articles and are labeled as unreliable or reliable to be distinguished from fake or real news. The goal of this assignment is to create a model that is able to detect fake news by making a prediction. 
+
+
+```{r}
+library(tidyverse)
+library(tm)
+library(caret)
+library(wordcloud)
+library(e1071)
+```
+
+
+## Data Understanding
+```{r}
+url <- "https://raw.githubusercontent.com/HAN-M3DM-Data-Mining/data-mining-s1y2223-Anne1807/master/datasets/NB-fakenews.csv"
+rawDF <- read_csv(url)
+show_col_types="FALSE"
+spec(rawDF)
+```
+```{r}
+head(rawDF)
+table(rawDF$label)
+```
+
+
+
+```{r}
+rawDF$label <- rawDF$label %>% factor(levels = c("1","0", "1"), labels = c("Reliable", "Unreliable")) %>% relevel("Reliable")
+class(rawDF$label)
+```
+
+
+
+```{r}
+unreliable <- rawDF %>% filter(label == "Unreliable")
+reliable <- rawDF %>% filter(label == "Reliable")
+
+
+
+wordcloud(unreliable$title, max.words = 20, scale = c(4, 0.8), colors= c("indianred1","indianred2","indianred3","indianred"))
+
+
+
+
+wordcloud(reliable$title, max.words = 20, scale = c(4, 0.8), colors= c("lightsteelblue1","lightsteelblue2","lightsteelblue3","lightsteelblue"))
+```
+
+
+
+## Data Preperation
+
+
+
+```{r}
+rawCorpus <- Corpus(VectorSource(rawDF$text))
+
+
+
+```
+
+
+
+```{r}
+inspect(rawCorpus[1:3])
+cleanCorpus <- rawCorpus %>% tm_map(tolower)%>%
+  tm_map(removeNumbers)%>%
+  tm_map(removeWords, stopwords()) %>%
+  tm_map(removePunctuation)
+  tm_map(stripWhitespace)
+```
+
+
+
+```{r}
+cleanDTM <- cleanCorpus %>% DocumentTermMatrix
+inspect(cleanDTM)
+```
+```{r}
+set.seed(2345)
+trainIndex <- createDataPartition(rawDF$label, p = .75,
+                                  list = FALSE,
+                                  times = 1)
+head(rawDF)
+```
+
+
+
+```{r}
+trainDF <- rawDF[trainIndex, ]
+testDF <- rawDF[-trainIndex, ]
+
+
+
+# Apply split indices to Corpus
+trainCorpus <- cleanCorpus[trainIndex]
+testCorpus <- cleanCorpus[-trainIndex]
+
+
+
+# Apply split indices to DTM
+trainDTM <- cleanDTM[trainIndex, ]
+testDTM <- cleanDTM[-trainIndex, ]
+```
+
+
+
+```{r}
+freqWords <- trainDTM %>% findFreqTerms(7000)
+trainDTM <-  DocumentTermMatrix(trainCorpus, list(dictionary = freqWords))
+testDTM <-  DocumentTermMatrix(testCorpus, list(dictionary = freqWords))
+```
+
+
+
+```{r}
+convert_counts <- function(x) {
+  x <- ifelse(x > 0, 1, 0) %>% factor(levels = c(0,1), labels = c("reliable", "unreliable"))
+}
+
+
+
+nColsDTM <- dim(trainDTM)[2]
+trainDTM <- apply(trainDTM, MARGIN = 2, convert_counts)
+testDTM <- apply(testDTM, MARGIN = 2, convert_counts)
+
+
+
+head(trainDTM[,1:10])
+```
+
+## Modeling
+
+```{r}
+nbayesModel <-  naiveBayes(trainDTM, trainDF$text, laplace = 1)
+```
+
+
+
+```{r}
+predVec <- predict(nbayesModel, testDTM)
+```
+```{r}
+confusionMatrix(predVec, testDF$label, positive = "1", dnn = c("Prediction", "True"))
+```
+## Evaluation and Deployment
