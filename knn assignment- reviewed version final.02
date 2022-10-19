@@ -1,0 +1,119 @@
+---
+title: "Assigment - kNN DIY"
+author:
+- "name author here - Anne Dam"
+- "name reviewer here - Shulaika van Kollenburg"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output:
+  html_document:
+    toc: yes
+    toc_depth: '2'
+    df_print: paged
+  html_notebook:
+    toc: yes
+    toc_depth: 2
+---
+
+
+```{r}
+library(tidyverse)
+library(googlesheets4)
+library(class)
+library(caret)
+library(gtools)
+library(magrittr)
+```
+
+---
+
+Choose a suitable dataset from [this](https://github.com/HAN-M3DM-Data-Mining/assignments/tree/master/datasets) folder and train  your own kNN model. Follow all the steps from the CRISP-DM model.
+
+
+## Business Understanding
+text and code here
+I want to find out if we can use humidity, temperature, light and Co2 to determine the occupancy of a room or if we maybe need to look at less factors. it is interesting to find out which rooms are occupied and which rooms are free. this is in interesting because if we know this it becomes easier to book a room because we can see how often rooms are occupied.
+
+## Data Understanding
+there is a lot of data and after looking at it i think that I only need light and co2 because all the other factors can also be caused because of the weather. it is not necessary the case but definitely an option. but with light we turn it on when someone is in the room and with co2 the amount grows when someone is inside. 
+
+I removed the extra . in the read.csv function
+correction:
+```{r}
+KNN <- read.csv("datasets/KNN-occupancy.csv")
+str(KNN)
+```
+
+## Data Preparation
+
+I added two additional cleanDF to clean the table.
+
+correction:
+```{r}
+cleanDF <- KNN[-1]
+cleanDF <- KNN[-5]
+cleanDF <- KNN[-1]
+cleanDF <- KNN[-1]
+head(cleanDF)
+```
+
+I replaced the = to $ in the table function to correctly apply the variable
+
+correction:
+```{r}
+cntOccupancy <- table(cleanDF$Occupancy)
+cntOccupancy
+```
+
+```{r}
+propOccupancy <- round(prop.table(cntOccupancy) * 100 , digits = 1)
+propOccupancy
+```
+```{r}
+cleanDF$Occupancy <- factor(cleanDF$Occupancy, levels = c("0", "1"), labels = c("Unoccupied", "Occupied")) %>% relevel("Occupied")
+
+```
+
+The summary function was written down after a # so it was removed
+
+correction:
+```{r}
+summary(cleanDF[c("Temperature", "Humidity", "Light", "CO2")])
+```
+
+```{r}
+normalize <- function(x) { # Function takes in a vector
+  return ((x - min(x)) / (max(x) - min(x))) # distance of item value - minimum vector value divided by the range of all vector values
+}
+
+numberOfColumns <- dim(cleanDF)[2]
+cleanDF_normalized <- sapply(1:(numberOfColumns-1), function(x) {
+  normalize(cleanDF[,x])
+}) %>% as.data.frame()
+summary(cleanDF_normalized)
+```
+
+
+I changed the testDF variable from 6000 to 6001
+
+correction:
+```{r}
+trainDF_features <- cleanDF_normalized[1:6000, ]
+testDF_features <- cleanDF_normalized[6001:8143, ]
+
+trainDF_labels <- cleanDF[1:6000, c("Occupancy")]
+testDF_labels <- cleanDF[6001:8143, c("Occupancy")]
+```
+
+## Modeling
+```{r}
+cleanDF_test_predictions <- knn(train = as.matrix(trainDF_features), test = as.matrix(testDF_features), cl = as.matrix(trainDF_labels), k = 21)
+```
+
+```{r}
+confusionMatrix(cleanDF_test_predictions, testDF_labels, positive = NULL, dnn = c("Prediction", "True"))
+```
+
+## Evaluation and Deployment
+
+Reviewer:
+The usage of using K=21 to implement the model is tested to determine the highest accuracy. I do would like to suggest to use the function of # more often to explain which steps were decided to be taken in order for the reader to be able to follow the methodology.
