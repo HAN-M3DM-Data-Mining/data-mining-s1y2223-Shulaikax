@@ -36,11 +36,7 @@ I want to find out if we can use humidity, temperature, light and Co2 to determi
 ## Data Understanding
 there is a lot of data and after looking at it i think that I only need light and co2 because all the other factors can also be caused because of the weather. it is not necessary the case but definitely an option. but with light we turn it on when someone is in the room and with co2 the amount grows when someone is inside. 
 
-```{r}
-KNN <- read.csv.("datasets/KNN-occupancy.csv"')
-str(KNN.)
-```
-
+I removed the extra . in the read.csv function
 correction:
 ```{r}
 KNN <- read.csv("datasets/KNN-occupancy.csv")
@@ -56,6 +52,8 @@ cleanDF <- KNN[-1]
 head(cleanDF)
 ```
 
+I added two additional cleanDF to clean the table.
+
 correction:
 ```{r}
 cleanDF <- KNN[-1]
@@ -65,12 +63,9 @@ cleanDF <- KNN[-1]
 head(cleanDF)
 ```
 
-```{r}
-cntOccupancy <- table(cleanDF=Occupancy)
-cntOccupancy
-```
-correction:
+I replaced the = to $ in the table function to correctly apply the variable
 
+correction:
 ```{r}
 cntOccupancy <- table(cleanDF$Occupancy)
 cntOccupancy
@@ -84,12 +79,13 @@ propOccupancy
 cleanDF$Occupancy <- factor(cleanDF$Occupancy, levels = c("0", "1"), labels = c("Unoccupied", "Occupied")) %>% relevel("Occupied")
 
 ```
-```{r}
-# summary(cleanDF[c("Temperature", "Humidity", "Light", "CO2")])
-```
+
+The summary function was written down after a # so it was removed
+
 correction:
 ```{r}
 summary(cleanDF[c("Temperature", "Humidity", "Light", "CO2")])
+```
 
 ```{r}
 normalize <- function(x) { # Function takes in a vector
@@ -102,9 +98,9 @@ cleanDF_normalized <- sapply(1:(numberOfColumns-1), function(x) {
 }) %>% as.data.frame()
 summary(cleanDF_normalized)
 ```
-```{r}
-trainDF_features <- cleanDF_normalized[1:6000, ]
-testDF_features <- cleanDF_normalized[6000:8143, ]
+
+
+I changed the testDF variable from 6000 to 6001
 
 correction:
 ```{r}
